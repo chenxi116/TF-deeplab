@@ -79,7 +79,7 @@ class DeepLab(object):
     if self.mode == 'train':
       self.global_step = tf.Variable(0, name='global_step', trainable=False)
       self._build_train_op()
-    self.summaries = tf.summary.merge_all()
+    # self.summaries = tf.summary.merge_all()
 
   def _stride_arr(self, stride):
     """Map a stride scalar to the stride array for tf.nn.conv2d."""
@@ -133,7 +133,9 @@ class DeepLab(object):
       x = tf.add(x0, x1)
       x = tf.add(x, x2)
       x = tf.add(x, x3)
-      self.pred = tf.nn.softmax(x)
+      x_flat = tf.reshape(x, [-1, self.num_classes])
+      pred = tf.nn.softmax(x_flat)
+      self.pred = tf.reshape(pred, tf.shape(x))
       self.up = tf.image.resize_bilinear(self.pred, [self.H, self.W])
 
     # with tf.variable_scope('costs'):
@@ -206,12 +208,13 @@ class DeepLab(object):
             initializer=tf.constant_initializer(1.0, tf.float32),
             trainable=False)
 
-        inv_factor = tf.reciprocal(factor)
+        # inv_factor = tf.reciprocal(factor)
+        inv_factor = tf.div(1., factor)
         mean = tf.mul(inv_factor, mean)
         variance = tf.mul(inv_factor, variance)
 
-        tf.summary.histogram(mean.op.name, mean)
-        tf.summary.histogram(variance.op.name, variance)
+        # tf.summary.histogram(mean.op.name, mean)
+        # tf.summary.histogram(variance.op.name, variance)
       # elipson used to be 1e-5. Maybe 0.001 solves NaN problem in deeper net.
       y = tf.nn.batch_normalization(
           x, mean, variance, beta, gamma, 0.001)
