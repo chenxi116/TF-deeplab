@@ -13,12 +13,10 @@
 # limitations under the License.
 # ==============================================================================
 
-"""ResNet model.
+"""DeepLab model.
 
-Related papers:
-https://arxiv.org/pdf/1603.05027v2.pdf
-https://arxiv.org/pdf/1512.03385v1.pdf
-https://arxiv.org/pdf/1605.07146v1.pdf
+Related paper:
+https://arxiv.org/abs/1606.00915
 """
 from collections import namedtuple
 from tensorflow.python.training import moving_averages
@@ -28,39 +26,34 @@ import pdb
 
 
 class DeepLab(object):
-  """ResNet model."""
+  """DeepLab model."""
 
   def __init__(self, batch_size = 1,
                      num_classes = 21,
-                     min_lrn_rate = 0.0001,
-                     lrn_rate = 0.1,
+                     lrn_rate = 0.00025,
+                     lr_decay_step = 20000,
                      num_residual_units = [3, 4, 23, 3],
                      use_bottleneck = True,
-                     weight_decay_rate = 0.0002,
+                     weight_decay_rate = 0.0005,
                      relu_leakiness = 0.0,
                      filters = [64, 256, 512, 1024, 2048],
                      optimizer = 'mom',
-                     images = tf.placeholder(tf.float32),
-                     labels = tf.placeholder(tf.float32),
-                     H = tf.placeholder(tf.int32),
-                     W = tf.placeholder(tf.int32),
                      mode = 'eval'):
-    """ResNet constructor.
+    """DeepLab constructor.
 
     Args:
       : Hyperparameters.
       images: Batches of images. [batch_size, image_size, image_size, 3]
-      labels: Batches of labels. [batch_size, num_classes]
+      labels: Batches of labels. [batch_size, image_size, image_size]
       mode: One of 'train' and 'eval'.
     """
-    self.images = images
-    self.H = H
-    self.W = W
-    self.labels = labels
+    self.images = tf.placeholder(tf.float32)
+    self.H = tf.shape(self.images)[1]
+    self.W = tf.shape(self.images)[2]
     self.batch_size = batch_size
     self.num_classes = num_classes
-    self.min_lrn_rate = min_lrn_rate
     self.lrn_rate = lrn_rate
+    self.lr_decay_step = lr_decay_step
     self.num_residual_units = num_residual_units
     self.use_bottleneck = use_bottleneck
     self.weight_decay_rate = weight_decay_rate
@@ -68,10 +61,12 @@ class DeepLab(object):
     self.filters = filters
     self.optimizer = optimizer
     self.mode = mode
+    self._extra_train_ops = []
+
+    if mode == 'train':
+      self.labels = tf.placeholder(tf.int32)
     with tf.variable_scope("DeepLab"):
       self.build_graph()
-
-    self._extra_train_ops = []
 
   def build_graph(self):
     """Build a whole graph for the model."""
@@ -133,38 +128,48 @@ class DeepLab(object):
       x = tf.add(x0, x1)
       x = tf.add(x, x2)
       x = tf.add(x, x3)
+      self.logits = x
       x_flat = tf.reshape(x, [-1, self.num_classes])
       pred = tf.nn.softmax(x_flat)
       self.pred = tf.reshape(pred, tf.shape(x))
       self.up = tf.image.resize_bilinear(self.pred, [self.H, self.W])
 
-    # with tf.variable_scope('costs'):
-    #   xent = tf.nn.softmax_cross_entropy_with_logits(
-    #       logits, self.labels)
-    #   self.cost = tf.reduce_mean(xent, name='xent')
-    #   self.cost += self._decay()
-
-    #   tf.summary.scalar('cost', self.cost)
-
   def _build_train_op(self):
     """Build training specific ops for the graph."""
-    self.lrn_rate = tf.constant(self.lrn_rate, tf.float32)
-    tf.summary.scalar('learning rate', self.lrn_rate)
+    xent = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits, labels=self.labels)
+    self.cls_loss = tf.reduce_mean(xent, name='xent')
+    self.cost = self.cls_loss + self._decay()
+    # tf.summary.scalar('cost', self.cost)
 
-    trainable_variables = tf.trainable_variables()
-    grads = tf.gradients(self.cost, trainable_variables)
+    self.learning_rate = tf.train.polynomial_decay(self.lrn_rate, self.global_step, self.lr_decay_step, power=0.9)
+    # tf.summary.scalar('learning rate', self.learning_rate)
+
+    tvars = tf.trainable_variables()
 
     if self.optimizer == 'sgd':
-      optimizer = tf.train.GradientDescentOptimizer(self.lrn_rate)
+      optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
     elif self.optimizer == 'mom':
-      optimizer = tf.train.MomentumOptimizer(self.lrn_rate, 0.9)
+      optimizer = tf.train.MomentumOptimizer(self.learning_rate, 0.9)
+    else:
+      raise NameError("Unknown optimizer type %s!" % self.optimizer)
 
-    apply_op = optimizer.apply_gradients(
-        zip(grads, trainable_variables),
+    grads_and_vars = optimizer.compute_gradients(self.cost, var_list=tvars)
+    var_lr_mult = {}
+    for var in tvars:
+      if var.op.name.find(r'fc1_voc12') > 0 and var.op.name.find(r'biases') > 0:
+        var_lr_mult[var] = 20.
+      elif var.op.name.find(r'fc1_voc12') > 0:
+        var_lr_mult[var] = 10.
+      else:
+        var_lr_mult[var] = 1.
+    grads_and_vars = [((g if var_lr_mult[v] == 1 else tf.mul(var_lr_mult[v], g)), v) 
+        for g, v in grads_and_vars]
+
+    apply_op = optimizer.apply_gradients(grads_and_vars,
         global_step=self.global_step, name='train_step')
 
     train_ops = [apply_op] + self._extra_train_ops
-    self.train_op = tf.group(*train_ops)
+    self.train_step = tf.group(*train_ops)
 
   # TODO(xpan): Consider batch_norm in contrib/layers/python/layers/layers.py
   def _batch_norm(self, name, x):

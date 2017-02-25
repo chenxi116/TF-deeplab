@@ -37,10 +37,7 @@ if __name__ == "__main__":
   if sys.argv[2] == 'single':
     im = process_im('example/2007_000129.jpg', mu)
     pred = sess.run(model.up, feed_dict={
-              model.images  : im,
-              model.H       : np.shape(im)[1],
-              model.W       : np.shape(im)[2],
-              model.labels  : np.zeros((1, 21)) # dummy
+              model.images  : im
           })
     pred = np.argmax(pred, axis=3).squeeze().astype(np.uint8)
     seg = Image.fromarray(pred)
@@ -55,10 +52,7 @@ if __name__ == "__main__":
       imname = line
       im = process_im(pascal_dir + imname + '.jpg', mu)
       pred = sess.run(model.up, feed_dict={
-                model.images  : im,
-                model.H       : np.shape(im)[1],
-                model.W       : np.shape(im)[2],
-                model.labels  : np.zeros((1, 21)) # dummy
+                model.images  : im
             })
       pred = np.argmax(pred, axis=3).squeeze().astype(np.uint8)
       seg = Image.fromarray(pred)
