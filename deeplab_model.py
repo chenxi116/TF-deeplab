@@ -36,6 +36,7 @@ class DeepLab(object):
                      use_bottleneck = True,
                      weight_decay_rate = 0.0005,
                      relu_leakiness = 0.0,
+                     bn = False,
                      filters = [64, 256, 512, 1024, 2048],
                      optimizer = 'mom',
                      mode = 'eval'):
@@ -58,6 +59,7 @@ class DeepLab(object):
     self.use_bottleneck = use_bottleneck
     self.weight_decay_rate = weight_decay_rate
     self.relu_leakiness = relu_leakiness
+    self.bn = bn
     self.filters = filters
     self.optimizer = optimizer
     self.mode = mode
@@ -72,7 +74,6 @@ class DeepLab(object):
     """Build a whole graph for the model."""
     self._build_model()
     if self.mode == 'train':
-      self.global_step = tf.Variable(0, name='global_step', trainable=False)
       self._build_train_op()
     # self.summaries = tf.summary.merge_all()
 
@@ -136,12 +137,27 @@ class DeepLab(object):
 
   def _build_train_op(self):
     """Build training specific ops for the graph."""
-    xent = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits, labels=self.labels)
+    labels_coarse = tf.image.resize_nearest_neighbor(self.labels, 
+      [tf.shape(self.pred)[1], tf.shape(self.pred)[2]])
+    labels_coarse = tf.squeeze(labels_coarse, squeeze_dims=[3])
+    self.labels_coarse = tf.to_int32(labels_coarse)
+
+    # ignore illegal labels
+    raw_pred = tf.reshape(self.logits, [-1, self.num_classes])
+    raw_gt = tf.reshape(self.labels_coarse, [-1,])
+    indices = tf.squeeze(tf.where(tf.less_equal(raw_gt, self.num_classes - 1)), 1)
+    remain_pred = tf.gather(raw_pred, indices)
+    remain_gt = tf.gather(raw_gt, indices)
+
+    xent = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=remain_pred, 
+      labels=remain_gt)
     self.cls_loss = tf.reduce_mean(xent, name='xent')
     self.cost = self.cls_loss + self._decay()
     # tf.summary.scalar('cost', self.cost)
 
-    self.learning_rate = tf.train.polynomial_decay(self.lrn_rate, self.global_step, self.lr_decay_step, power=0.9)
+    self.global_step = tf.Variable(0, name='global_step', trainable=False)
+    self.learning_rate = tf.train.polynomial_decay(self.lrn_rate, 
+      self.global_step, self.lr_decay_step, power=0.9)
     # tf.summary.scalar('learning rate', self.learning_rate)
 
     tvars = tf.trainable_variables()
@@ -179,15 +195,18 @@ class DeepLab(object):
 
       beta = tf.get_variable(
           'beta', params_shape, tf.float32,
-          initializer=tf.constant_initializer(0.0, tf.float32))
+          initializer=tf.constant_initializer(0.0, tf.float32),
+          trainable=False)
       gamma = tf.get_variable(
           'gamma', params_shape, tf.float32,
-          initializer=tf.constant_initializer(1.0, tf.float32))
+          initializer=tf.constant_initializer(1.0, tf.float32),
+          trainable=False)
       factor = tf.get_variable(
           'factor', 1, tf.float32,
-          initializer=tf.constant_initializer(0.0, tf.float32))
+          initializer=tf.constant_initializer(0.0, tf.float32),
+          trainable=False)
 
-      if self.mode == 'train':
+      if self.bn:
         mean, variance = tf.nn.moments(x, [0, 1, 2], name='moments')
 
         moving_mean = tf.get_variable(
