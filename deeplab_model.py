@@ -37,6 +37,8 @@ class DeepLab(object):
                      weight_decay_rate = 0.0005,
                      relu_leakiness = 0.0,
                      bn = False,
+                     images = tf.placeholder(tf.float32),
+                     labels = tf.placeholder(tf.int32),
                      filters = [64, 256, 512, 1024, 2048],
                      optimizer = 'mom',
                      mode = 'eval'):
@@ -48,7 +50,8 @@ class DeepLab(object):
       labels: Batches of labels. [batch_size, image_size, image_size]
       mode: One of 'train' and 'eval'.
     """
-    self.images = tf.placeholder(tf.float32)
+    self.images = images
+    self.labels = labels
     self.H = tf.shape(self.images)[1]
     self.W = tf.shape(self.images)[2]
     self.batch_size = batch_size
@@ -65,8 +68,6 @@ class DeepLab(object):
     self.mode = mode
     self._extra_train_ops = []
 
-    if mode == 'train':
-      self.labels = tf.placeholder(tf.int32)
     with tf.variable_scope("DeepLab"):
       self.build_graph()
 
