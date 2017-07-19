@@ -3,8 +3,8 @@ import pdb
 import re
 
 # sample usage:
-# python caffemodel2npy.py ../ResNet/ResNet-101-deploy.prototxt 
-# ../ResNet/ResNet-101-model.caffemodel ./model/ResNet101.npy
+# python caffemodel2npy.py deploy.prototxt 
+# ../deeplab/ResNet101/init.caffemodel ./model/ResNet101_init.npy
 
 class CaffeLayerProcessor(object):
     def __init__(self, net):

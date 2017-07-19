@@ -6,7 +6,7 @@ import os; os.environ['CUDA_VISIBLE_DEVICES'] = sys.argv[1]
 import pdb
 
 # sample usage:
-# python npy2tfmodel.py 0 ./model/ResNet101.npy ./model/ResNet101_init.tfmodel
+# python npy2tfmodel.py 0 ./model/ResNet101_init.npy ./model/ResNet101_init.tfmodel
 
 weights = np.load(sys.argv[2])[()]
 
@@ -27,4 +27,3 @@ assert(count == len(weights))
 
 snapshot_saver = tf.train.Saver()
 snapshot_saver.save(sess, sys.argv[3])
-# pdb.set_trace()

@@ -28,13 +28,13 @@ if __name__ == "__main__":
   mu = mu.mean(1).mean(1)
 
   if sys.argv[2] == 'train':
-    pretrained_model = './model/ResNet101_coco.tfmodel'
+    pretrained_model = './model/ResNet101_init.tfmodel'
     model = DeepLab(mode='train')
     load_var = {var.op.name: var for var in tf.global_variables() 
         if not 'Momentum' in var.op.name and not 'global_step' in var.op.name}
     snapshot_restorer = tf.train.Saver(load_var)
   else:
-    pretrained_model = './model/ResNet101_init.tfmodel'
+    pretrained_model = './model/ResNet101_train.tfmodel'
     # pretrained_model = './model/ResNet101_epoch_2.tfmodel'
     model = DeepLab()
     snapshot_restorer = tf.train.Saver()

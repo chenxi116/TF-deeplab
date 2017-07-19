@@ -12,11 +12,15 @@ The `caffemodel2npy.py` is modified from [here](https://github.com/ppwwyyxx/tens
 - Download the prototxt and caffemodel [provided by Jay](http://liangchiehchen.com/projects/DeepLabv2_resnet.html)
 - Convert caffemodel to npy file
 ```bash
-python caffemodel2npy.py deploy.prototxt ../deeplab/ResNet101/train_iter_20000.caffemodel ./model/ResNet101.npy 
+python caffemodel2npy.py deploy.prototxt ../deeplab/ResNet101/init.caffemodel ./model/ResNet101_init.npy
+python caffemodel2npy.py deploy.prototxt ../deeplab/ResNet101/train_iter_20000.caffemodel ./model/ResNet101_train.npy
+python caffemodel2npy.py deploy.prototxt ../deeplab/ResNet101/train2_iter_20000.caffemodel ./model/ResNet101_train2.npy
 ```
 - Convert npy file to tfmodel
 ```bash
-python npy2tfmodel.py 0 ./model/ResNet101.npy ./model/ResNet101_init.tfmodel
+python npy2tfmodel.py 0 ./model/ResNet101_init.npy ./model/ResNet101_init.tfmodel
+python npy2tfmodel.py 0 ./model/ResNet101_train.npy ./model/ResNet101_train.tfmodel
+python npy2tfmodel.py 0 ./model/ResNet101_train2.npy ./model/ResNet101_train2.tfmodel
 ```
 - Test on a single image
 ```bash
