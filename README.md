@@ -1,8 +1,8 @@
 # TF-deeplab
 
-This is a Tensorflow implementation of [DeepLab](http://liangchiehchen.com/projects/DeepLab.html). 
+This is a Tensorflow implementation of [DeepLab](http://liangchiehchen.com/projects/DeepLab.html), compatible with Tensorflow 1.2.1.
 
-Currently it only supports testing the ResNet 101 version by converting the caffemodel provided by Jay. Although supporting training should be quick and easy. 
+Currently it supports both training and testing the ResNet 101 version by converting the caffemodel provided by Jay. 
 
 Note that the current version is not multi-scale, i.e. only uses the original resolution branch and discarding all layers of 0.5 and 0.75 resolution.
 
@@ -26,9 +26,14 @@ python npy2tfmodel.py 0 ./model/ResNet101_train2.npy ./model/ResNet101_train2.tf
 ```bash
 python deeplab_main.py 0 single
 ```
-- Test on the PASCAL VOC2012 validation set (you will also want to look at the `matlab` folder after you run the following command)
+- Test on the PASCAL VOC2012 validation set (you will also want to look at the `matlab` folder and run `EvalSegResults.m` after you run the following command)
 ```bash
-python deeplab_main.py 0 pascal
+python deeplab_main.py 0 test
+```
+
+- To train on the PASCAL VOC2012 `train_aug`, run
+```bash
+python deeplab_main.py 0 train
 ```
 
 ## Performance
@@ -38,4 +43,3 @@ The converted DeepLab ResNet 101 model achieves mean IOU of 73.296% on the valid
 ## TODO
 
 - Incorporating 0.5 and 0.75 resolution
-- Training code

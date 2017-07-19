@@ -182,7 +182,7 @@ class DeepLab(object):
         var_lr_mult[var] = 10.
       else:
         var_lr_mult[var] = 1.
-    grads_and_vars = [((g if var_lr_mult[v] == 1 else tf.mul(var_lr_mult[v], g)), v) 
+    grads_and_vars = [((g if var_lr_mult[v] == 1 else tf.multiply(var_lr_mult[v], g)), v) 
         for g, v in grads_and_vars]
 
     apply_op = optimizer.apply_gradients(grads_and_vars,
@@ -238,8 +238,8 @@ class DeepLab(object):
 
         # inv_factor = tf.reciprocal(factor)
         inv_factor = tf.div(1., factor)
-        mean = tf.mul(inv_factor, mean)
-        variance = tf.mul(inv_factor, variance)
+        mean = tf.multiply(inv_factor, mean)
+        variance = tf.multiply(inv_factor, variance)
 
         # tf.summary.histogram(mean.op.name, mean)
         # tf.summary.histogram(variance.op.name, variance)
@@ -286,7 +286,7 @@ class DeepLab(object):
         costs.append(tf.nn.l2_loss(var))
         # tf.histogram_summary(var.op.name, var)
 
-    return tf.mul(self.weight_decay_rate, tf.add_n(costs))
+    return tf.multiply(self.weight_decay_rate, tf.add_n(costs))
 
   def _conv(self, name, x, filter_size, in_filters, out_filters, strides, atrous=1, bias=False):
     """Convolution."""
@@ -309,7 +309,7 @@ class DeepLab(object):
 
   def _relu(self, x, leakiness=0.0):
     """Relu, with optional leaky support."""
-    return tf.select(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
+    return tf.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
 
   def _fully_connected(self, x, out_dim):
     """FullyConnected layer for final output."""

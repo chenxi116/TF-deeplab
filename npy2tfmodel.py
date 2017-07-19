@@ -29,7 +29,7 @@ weights = np.load(sys.argv[2])[()]
 model = deeplab_model.DeepLab()
 
 sess = tf.Session()
-sess.run(tf.initialize_all_variables())
+sess.run(tf.global_variables_initializer())
 var_list = tf.all_variables()
 count = 0
 for item in var_list:
