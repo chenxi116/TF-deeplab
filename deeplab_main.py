@@ -38,9 +38,7 @@ def process_im(imname, mu):
 
 if __name__ == "__main__":
 
-  caffe_root = '/media/Work_HD/cxliu/tools/caffe/'
-  mu = np.load(caffe_root + 'python/caffe/imagenet/ilsvrc_2012_mean.npy')
-  mu = mu.mean(1).mean(1)
+  mu = np.array((104.00698793, 116.66876762, 122.67891434))
 
   if sys.argv[2] == 'train':
     pretrained_model = './model/ResNet101_init.tfmodel'
