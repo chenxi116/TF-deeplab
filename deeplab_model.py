@@ -161,7 +161,7 @@ class DeepLab(object):
 
     self.global_step = tf.Variable(0, name='global_step', trainable=False)
     self.learning_rate = tf.train.polynomial_decay(self.lrn_rate, 
-      self.global_step, self.lr_decay_step, power=0.9)
+      self.global_step, self.lr_decay_step, end_learning_rate=0.0, power=0.9)
     # tf.summary.scalar('learning rate', self.learning_rate)
 
     tvars = tf.trainable_variables()
