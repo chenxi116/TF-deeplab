@@ -89,6 +89,7 @@ if __name__ == "__main__":
     pascal_dir = '/media/Work_HD/cxliu/datasets/VOCdevkit/VOC2012'
     list_dir = '/media/Work_HD/cxliu/projects/deeplab/list/'
     lines = np.loadtxt(list_dir + 'train_aug.txt', dtype=str)
+    model.lr_decay_step = num_epochs * len(lines)  # Number of total updates
     for epoch in range(num_epochs):
       lines = np.random.permutation(lines)
       for i, line in enumerate(lines):
