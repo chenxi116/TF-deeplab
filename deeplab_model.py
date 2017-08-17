@@ -207,7 +207,7 @@ class DeepLab(object):
           trainable=False)
       factor = tf.get_variable(
           'factor', 1, tf.float32,
-          initializer=tf.constant_initializer(0.0, tf.float32),
+          initializer=tf.constant_initializer(1.0, tf.float32),
           trainable=False)
 
       if self.bn:
